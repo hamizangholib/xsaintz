@@ -1,0 +1,843 @@
+/* =========================================================================
+   XSaintZ — Plush Wash
+   Panel gemuk beradius besar, ink fill yang mekar dari titik masuk pointer,
+   cursor sticky, reveal per-baris lewat mask. Warna tiap tool datang dari
+   tools.json, bukan dari file ini.
+   ========================================================================= */
+
+/* --- Tokens ------------------------------------------------------------- */
+:root {
+  --paper:  #EEF0F4;   /* ground, abu-biru pucat dingin                     */
+  --panel:  #FFFFFF;   /* permukaan kartu plush                             */
+  --ink:    #161A2B;   /* teks utama, indigo pekat        — 15.1:1 di paper */
+  --muted:  #5C6379;   /* teks sekunder                   —  5.2:1 di paper */
+  --rule:   #D2D6DF;   /* garis halus, dipakai sangat hemat                 */
+  --volt:   #3D2BFF;   /* aksen sistem: focus ring, cursor —  6.2:1         */
+  --signal: #DC3412;   /* label aksi di cursor — putih di atasnya 4.6:1     */
+
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+
+  --gut: clamp(1.25rem, 5vw, 5.5rem);
+  --radius: clamp(22px, 2.6vw, 38px);
+
+  /* Lebar maksimum konten. 2000px berarti layar 1080p/1440p terisi penuh
+     dan pembatasnya baru bekerja di monitor ultrawide. Semua seksi memakai
+     token ini plus margin-inline auto, kalau tidak blok menempel ke kiri
+     dan menyisakan celah kosong di kanan. */
+  --wrap: 2000px;
+
+  /* Ease-out sopan untuk warna; pegas beroverhoot untuk apa pun yang bergerak. */
+  --ease:   cubic-bezier(.22, 1, .36, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+
+  --accent: var(--volt);
+}
+
+@property --wc { syntax: "<color>"; inherits: true; initial-value: #3D2BFF; }
+@property --wx { syntax: "<percentage>"; inherits: true; initial-value: 72%; }
+@property --wy { syntax: "<percentage>"; inherits: true; initial-value: 34%; }
+
+/* --- Reset -------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+/* scroll-behavior sengaja tidak diset: Lenis yang memegang smooth scroll.
+   Dua mekanisme sekaligus membuat anchor scroll saling tarik. */
+
+/* CSS minimum yang disyaratkan Lenis, ditulis inline supaya tidak perlu
+   memuat berkas CDN kedua. Kelas .lenis dipasang sendiri oleh library. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: clamp(1rem, .95rem + .25vw, 1.125rem);
+  line-height: 1.6;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img, svg { display: block; max-width: 100%; }
+ol, ul { list-style: none; padding: 0; }
+a { color: inherit; text-decoration: none; }
+
+:focus-visible {
+  outline: 3px solid var(--volt);
+  outline-offset: 5px;
+  border-radius: 6px;
+}
+
+.skip {
+  position: fixed;
+  top: .75rem; left: .75rem;
+  z-index: 300;
+  padding: .8rem 1.3rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 500;
+  border-radius: 999px;
+  transform: translateY(-200%);
+  transition: transform .45s var(--spring);
+}
+.skip:focus-visible { transform: none; }
+
+/* --- Ambient wash ------------------------------------------------------- */
+.wash {
+  position: fixed;
+  inset: -30%;
+  z-index: 0;
+  pointer-events: none;
+  --wc: var(--volt);
+  background:
+    radial-gradient(42vmax 42vmax at var(--wx) var(--wy), var(--wc) 0%, transparent 72%),
+    radial-gradient(30vmax 30vmax at calc(100% - var(--wx)) calc(var(--wy) + 26%), var(--wc) 0%, transparent 76%);
+  opacity: .17;
+  transition: --wc .6s var(--ease), --wx .9s var(--ease),
+              --wy .9s var(--ease), opacity .6s var(--ease);
+}
+.wash.is-lit { opacity: .34; }
+
+main, .masthead { position: relative; z-index: 1; }
+
+/* --- Reveal per-baris lewat mask ---------------------------------------- */
+/* Keadaan awal yang menyembunyikan teks digantung pada .js — kelas itu baru
+   dipasang oleh main.js. Kalau JS gagal atau reduced-motion aktif, teks
+   tampil apa adanya dan tidak ada yang terjebak tak terlihat. */
+.mask { display: block; overflow: hidden; padding-bottom: .08em; }
+.mask__in {
+  display: block;
+  transition: transform .95s var(--spring);
+  transition-delay: var(--d, 0ms);
+}
+.js .mask__in { transform: translateY(115%); }
+.js .is-in .mask__in { transform: none; }
+
+.rise {
+  transition: opacity .8s var(--ease), transform .8s var(--spring);
+  transition-delay: var(--d, 0ms);
+}
+.js .rise { opacity: 0; transform: translateY(22px); }
+.js .is-in .rise { opacity: 1; transform: none; }
+
+/* --- Masthead ----------------------------------------------------------- */
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem) var(--gut);
+  max-width: var(--wrap);
+  margin-inline: auto;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 .2rem;
+  gap: .55rem;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -.02em;
+}
+
+/* Ikon dan wordmark tampil berdampingan: berkas logonya ikon saja, tidak
+   memuat teks. Kalau berkasnya hilang, onerror menghapus img dan teksnya
+   tetap berdiri sendiri. */
+.wordmark__img { width: 32px; height: 32px; }
+
+.wordmark__x {
+  color: var(--volt);
+  display: inline-block;
+  transition: transform .6s var(--spring);
+}
+.wordmark:hover .wordmark__x { transform: rotate(-90deg) scale(1.15); }
+
+.masthead__note { font-size: .8125rem; color: var(--muted); }
+
+/* --- Hero --------------------------------------------------------------- */
+.hero {
+  padding: clamp(2.5rem, 9vh, 7rem) var(--gut) clamp(3.5rem, 10vh, 7rem);
+  max-width: var(--wrap);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: .75rem;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+.eyebrow__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--volt);
+  animation: pulse 2.6s var(--ease) infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.8); opacity: .4; }
+}
+
+.hero__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.9rem, 11.5vw, 9rem);
+  line-height: .92;
+  letter-spacing: -.035em;
+}
+.hero__title em { font-style: normal; color: var(--volt); }
+
+/* Parallax hero, diisi main.js. Transform saja — tidak memicu layout. */
+.hero__title, .hero__lede { --hy: 0px; transform: translate3d(0, var(--hy), 0); }
+
+.hero__lede {
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  max-width: 46ch;
+  color: var(--muted);
+}
+
+.cue {
+  display: inline-flex;
+  align-items: center;
+  gap: .9rem;
+  margin-top: clamp(2.25rem, 5vw, 3.5rem);
+  min-height: 56px;
+  padding: 0 1.6rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 500;
+  transition: transform .5s var(--spring), background-color .4s var(--ease);
+}
+.cue:hover { transform: translateY(4px) scale(1.03); background: var(--volt); }
+.cue__count {
+  font-variant-numeric: tabular-nums;
+  font-size: .75rem;
+  letter-spacing: .1em;
+  opacity: .7;
+  padding-left: .9rem;
+  border-left: 1px solid currentColor;
+}
+
+/* --- Pita berjalan ------------------------------------------------------ */
+.marquee {
+  overflow: hidden;
+  padding: clamp(1rem, 3vw, 2.25rem) 0 clamp(1.75rem, 4vw, 3rem);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+/* Dua lapisan terpisah supaya transform-nya tidak saling menimpa:
+   .marquee__shift digeser JS mengikuti scroll, .marquee__track berjalan
+   sendiri lewat animasi CSS di compositor. Kalau keduanya digabung, animasi
+   CSS akan menimpa transform dari JS. */
+.marquee__shift {
+  width: max-content;
+  transform: translate3d(var(--mx, 0px), 0, 0);
+}
+.marquee__track {
+  display: flex;
+  width: max-content;
+  animation: marquee-run 34s linear infinite;
+}
+
+@keyframes marquee-run {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+.marquee__group {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.75rem);
+  padding-right: clamp(1.25rem, 3vw, 2.75rem);
+}
+.marquee__item {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.1rem, 5.5vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -.035em;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--rule);
+}
+.marquee__dot {
+  flex: none;
+  width: .5rem; height: .5rem;
+  border-radius: 50%;
+  background: var(--volt);
+}
+
+/* --- Seksi tools -------------------------------------------------------- */
+.tools {
+  padding: 0 var(--gut) clamp(3.5rem, 9vw, 7rem);
+  max-width: var(--wrap);
+  margin-inline: auto;
+}
+
+.tools__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  padding-bottom: clamp(1.25rem, 2.5vw, 2rem);
+}
+.section-title {
+  font-family: var(--body);
+  font-size: .75rem;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.section-note { font-size: .8125rem; color: var(--muted); }
+.loading { color: var(--muted); padding: 3rem 0; }
+
+/* --- Daftar baris ------------------------------------------------------- */
+/* Baris full-width bertumpuk, bukan grid dua kolom. Tiap baris punya ruang
+   sendiri untuk judul, nomor, kolom teks, dan grafis di kanan. */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(.6rem, 1vw, 1rem);
+
+  /* Miring sedikit mengikuti kecepatan scroll, diisi main.js. Transform saja,
+     dan sudutnya dibatasi kecil supaya teks tetap enak dibaca. */
+  transform: skewY(var(--skew, 0deg));
+}
+
+/* --- Panel ------------------------------------------------------------- */
+.cell {
+  /* Tone menurun dari gelap ke terang lalu berulang, jadi jumlah tool berapa
+     pun tetap dapat ritme yang sama. Warna teks per tone dipilih solid —
+     menurunkan opacity teks menjatuhkan kontras diam-diam. */
+  --surface: var(--panel);
+  --fg: var(--ink);
+  --fg-dim: var(--muted);
+  --num: #C2C8D6;
+  --hair: rgba(22, 26, 43, .1);
+  --chip: rgba(22, 26, 43, .07);
+  --art-color: var(--accent);
+  --art-alpha: .38;
+  --surface-collapsed: #E9ECF2;
+
+  --lift: 0px;   /* hover  */
+  --par:  0px;   /* scroll */
+  --rev:  0px;   /* reveal */
+  --revs: 1;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: clamp(1.6rem, 3vw, 3rem);
+  box-shadow: 0 1px 2px rgba(22, 26, 43, .05);
+  transform: translate3d(0, calc(var(--par) + var(--lift) + var(--rev)), 0) scale(var(--revs));
+  transition: transform .65s var(--spring), opacity .7s var(--ease),
+              box-shadow .6s var(--ease), height .9s var(--spring),
+              background-color .55s var(--ease);
+}
+
+/* --- Buka bertahap saat masuk viewport ---------------------------------- */
+/* Tinggi diubah lewat transisi CSS sekali per kartu, bukan ditulis ulang
+   tiap frame scroll. Menulis height tiap frame memaksa reflow seluruh
+   dokumen dan membuat halaman terasa berat. --h-full diukur main.js. */
+.js .cell { height: var(--h-collapsed, auto); }
+.js .cell.is-open { height: var(--h-full, auto); }
+
+/* Saat terlipat semua kartu memakai tone terang yang sama, lalu masing-masing
+   memunculkan identitasnya saat terbuka. */
+.js .cell:not(.is-open) {
+  --surface: var(--surface-collapsed);
+  --fg: var(--ink);
+  --fg-dim: var(--muted);
+  --num: #A9B0C2;
+  --chip: rgba(22, 26, 43, .07);
+  --hair: rgba(22, 26, 43, .1);
+}
+
+/* Dipakai sesaat oleh main.js untuk membaca tinggi asli kartu. */
+.cell.is-measuring {
+  height: auto !important;
+  transition: none !important;
+}
+
+.js .card__body,
+.js .card__dl {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .6s var(--ease), transform .7s var(--spring);
+  transition-delay: var(--bd, 0ms);
+}
+.js .card__dl { --bd: 220ms; }
+.js .card__body { --bd: 120ms; }
+
+.js .cell.is-open .card__body,
+.js .cell.is-open .card__dl { opacity: 1; transform: none; }
+
+.js .card__art { opacity: 0; }
+.js .cell.is-open .card__art { opacity: var(--art-alpha); }
+
+.cell:nth-child(4n+1) {
+  --surface: #161A2B;
+  --fg: #fff;            /* 17.3:1 */
+  --fg-dim: #B4BBD0;     /*  9.0:1 */
+  --num: #4A5170;
+  --hair: rgba(255, 255, 255, .16);
+  --chip: rgba(255, 255, 255, .12);
+  --art-alpha: .5;
+}
+.cell:nth-child(4n+2) {
+  --surface: #272C40;
+  --fg: #fff;            /* 13.8:1 */
+  --fg-dim: #B4BBD0;     /*  7.2:1 */
+  --num: #5A6180;
+  --hair: rgba(255, 255, 255, .16);
+  --chip: rgba(255, 255, 255, .12);
+  --art-alpha: .5;
+}
+.cell:nth-child(4n+3) {
+  --surface: #E3E7EF;
+  --num: #A9B0C2;
+}
+/* 4n+4 memakai nilai default .cell — panel putih. */
+
+/* Ink fill: lingkaran warna tool yang mekar dari titik pointer masuk. */
+.cell::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: var(--py, 50%);
+  left: var(--px, 50%);
+  /* Diameter dihitung JS dari diagonal kartu. Persentase lebar saja tidak
+     cukup: kartu tinggi di mobile menyisakan sudut yang tak pernah tertutup. */
+  width: var(--ink, 200%);
+  height: var(--ink, 200%);
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform .75s var(--spring);
+}
+.cell.is-active::before { transform: translate(-50%, -50%) scale(1); }
+
+.cell.is-active {
+  --fg: #fff;
+  --fg-dim: #fff;
+  --num: rgba(255, 255, 255, .45);
+  --hair: rgba(255, 255, 255, .3);
+  --chip: rgba(0, 0, 0, .22);   /* menggelapkan accent, bukan menerangkan,
+                                   supaya teks putih tetap lolos AA */
+  --art-color: #fff;
+  --art-alpha: .22;
+  --lift: -6px;
+  box-shadow: 0 26px 50px -22px rgba(22, 26, 43, .4);
+}
+
+/* --- Isi kartu ---------------------------------------------------------- */
+.card {
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* Judul di kiri, nomor di tepi kanan kartu, duduk di baseline yang sama.
+   Nomor tidak bisa diposisikan absolut terhadap .card kalau .card dibatasi
+   lebarnya — ia akan menempel ke ujung kolom teks, bukan ke tepi kartu. */
+.card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1rem, 3vw, 2.5rem);
+}
+.card__titles {
+  display: flex;
+  align-items: center;
+  gap: clamp(.85rem, 1.6vw, 1.35rem);
+  min-width: 0;
+}
+.card__titletext { min-width: 0; }
+.card__titletext .card__kind { margin-bottom: .3rem; }
+
+/* Ubin putih di belakang tiap logo. Logo tool datang dengan latar yang
+   berbeda-beda — Saveflow terang, CleanMark gelap — jadi tanpa ubin ini
+   salah satunya pasti hilang di salah satu tone kartu. */
+.card__logo {
+  flex: none;
+  width: clamp(2.75rem, 4vw, 3.5rem);
+  height: clamp(2.75rem, 4vw, 3.5rem);
+  padding: 6px;
+  border-radius: clamp(.75rem, 1.1vw, 1rem);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(22, 26, 43, .2);
+  object-fit: contain;
+}
+
+/* Nomor urut: solid dan tenang di pojok kanan, sejajar judul. */
+.card__index {
+  flex: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 2.4vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--num);
+  pointer-events: none;
+  --iy: 0px;
+  --ir: 0deg;
+  --ip: 0px;   /* drift saat scroll, diisi main.js */
+  transform: translate3d(0, calc(var(--iy) + var(--ip)), 0) rotate(var(--ir));
+  transition: color .45s var(--ease), transform .7s var(--spring);
+}
+.cell.is-active .card__index { --iy: -6px; }
+
+.card__kind {
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  transition: color .45s var(--ease);
+}
+
+.card__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(2rem, 4.6vw, 3.6rem);
+  line-height: 1.02;
+  letter-spacing: -.03em;
+  margin: .5rem 0 0;
+  color: var(--fg);
+  transition: color .45s var(--ease);
+}
+
+.card__tagline {
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-weight: 500;
+  color: var(--fg);
+  max-width: 40ch;
+  margin-top: 1.15rem;
+  transition: color .45s var(--ease);
+}
+
+.card__desc {
+  margin-top: .8rem;
+  font-size: .9375rem;
+  line-height: 1.65;
+  color: var(--fg-dim);
+  max-width: 46ch;
+  transition: color .45s var(--ease);
+}
+
+.card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: 1.5rem;
+  max-width: 46ch;
+}
+.card__meta span {
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: .45rem .85rem;
+  border-radius: 999px;
+  color: var(--fg);
+  background: var(--chip);
+  transition: color .45s var(--ease), background-color .45s var(--ease);
+}
+
+.card__note {
+  display: flex;
+  gap: .6rem;
+  margin-top: 1.1rem;
+  font-size: .8125rem;
+  color: var(--fg-dim);
+  max-width: 42ch;
+  transition: color .45s var(--ease);
+}
+.card__note::before {
+  content: "!";
+  flex: none;
+  width: 1.25rem; height: 1.25rem;
+  margin-top: .1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--fg);
+  color: var(--surface);
+  font-size: .6875rem;
+  font-weight: 500;
+  transition: background-color .45s var(--ease), color .45s var(--ease);
+}
+.cell.is-active .card__note::before { background: #fff; color: var(--accent); }
+
+.card__go {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  margin-top: 1.8rem;
+  font-weight: 500;
+  font-size: .9375rem;
+  color: var(--fg);
+  transition: color .45s var(--ease);
+}
+.card__go svg { transition: transform .6s var(--spring); }
+.cell.is-active .card__go svg { transform: translate(5px, -5px); }
+
+/* Tombol unduh: solid, jelas bisa diklik. */
+.card__dl {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-top: 1.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--hair);
+  max-width: min(100%, 52ch);
+  transition: border-color .45s var(--ease);
+}
+.card__dl a {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 46px;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-size: .8125rem;
+  font-weight: 500;
+  background: var(--fg);
+  color: var(--surface);
+  transition: transform .5s var(--spring), background-color .4s var(--ease),
+              color .4s var(--ease);
+}
+.card__dl a:hover, .card__dl a:focus-visible { transform: translateY(-3px) scale(1.04); }
+.cell.is-active .card__dl a { background: #fff; color: var(--accent); }
+
+/* --- Grafis kanan ------------------------------------------------------- */
+/* Empat pola berulang, semuanya gradien CSS yang diwarnai --art-color, jadi
+   tidak ada berkas gambar dan tool baru otomatis kebagian pola. */
+.card__art {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: clamp(12rem, 36%, 34rem);
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--art-alpha);
+  color: var(--art-color);
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 58%);
+          mask-image: linear-gradient(90deg, transparent, #000 58%);
+  transition: opacity .5s var(--ease), color .5s var(--ease);
+}
+
+.cell:nth-child(4n+1) .card__art {
+  background-image: repeating-linear-gradient(90deg,
+    currentColor 0 14px, transparent 14px 46px);
+  background-size: 100% 100%;
+}
+.cell:nth-child(4n+2) .card__art {
+  background-image:
+    repeating-linear-gradient(45deg,  currentColor 0 7px, transparent 7px 38px),
+    repeating-linear-gradient(-45deg, currentColor 0 7px, transparent 7px 38px);
+  background-size: 50% 100%, 50% 100%;
+  background-position: 0 0, 100% 0;
+}
+.cell:nth-child(4n+3) .card__art {
+  background-image: repeating-radial-gradient(circle at 72% 52%,
+    currentColor 0 3px, transparent 3px 32px);
+  background-size: 100% 100%;
+}
+.cell:nth-child(4n+4) .card__art {
+  background-image: radial-gradient(circle, currentColor 2.5px, transparent 2.6px);
+  background-size: 28px 28px;
+  background-repeat: repeat;
+}
+
+/* Di layar sempit grafisnya cuma menyesaki teks. */
+@media (max-width: 820px) {
+  .card__art { display: none; }
+  .card__dl { max-width: 100%; }
+  .card__index { font-size: 1.25rem; }
+}
+
+/* --- Reveal kartu ------------------------------------------------------- */
+/* main.js melepas kelas .js-reveal setelah semua kartu tampil. Nilai
+   --rev/--revs di keadaan .is-in sama persis dengan default .cell, jadi
+   pelepasan itu tidak menimbulkan lompatan — dan transition-delay stagger
+   ikut hilang, supaya hover setelahnya bereaksi seketika. */
+.grid.js-reveal .cell { opacity: 0; --rev: 34px; --revs: .97; }
+.grid.js-reveal .cell.is-in {
+  opacity: 1;
+  --rev: 0px;
+  --revs: 1;
+  transition-delay: var(--d, 0ms);
+}
+
+/* --- Feedback sentuh ---------------------------------------------------- */
+@media (hover: none) {
+  .cell:active { transform: scale(.98); }
+}
+
+/* --- Bar progres scroll ------------------------------------------------- */
+.progress {
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 250;
+  width: 100%;
+  height: 3px;
+  background: var(--volt);
+  transform: scaleX(var(--p, 0));
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+
+/* --- Custom cursor ------------------------------------------------------ */
+.cursor { position: fixed; inset: 0; z-index: 200; pointer-events: none; display: none; }
+.cursor.is-on { display: block; }
+
+.cursor__blob {
+  position: absolute;
+  top: 0; left: 0;
+  width: 46px; height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 999px;
+  background: #fff;
+  mix-blend-mode: difference;
+  transform: translate3d(var(--x, -200px), var(--y, -200px), 0)
+             rotate(var(--rot, 0deg)) scale(var(--sx, 1), var(--sy, 1));
+  transition: width .45s var(--spring), height .45s var(--spring),
+              border-radius .45s var(--spring), margin .45s var(--spring),
+              opacity .3s var(--ease);
+}
+
+/* Sticky: blob mengunci ke kotak elemen kecil (tombol, wordmark). */
+.cursor.is-stuck .cursor__blob {
+  width: var(--sw, 46px);
+  height: var(--sh, 46px);
+  margin: calc(var(--sh, 46px) / -2) 0 0 calc(var(--sw, 46px) / -2);
+  border-radius: var(--sr, 999px);
+}
+
+/* Label: gelembung terpisah tanpa blend, supaya kontras teksnya terkontrol. */
+.cursor__label {
+  position: absolute;
+  top: 0; left: 0;
+  display: grid;
+  place-items: center;
+  width: 104px; height: 104px;
+  margin: -52px 0 0 -52px;
+  border-radius: 999px;
+  background: var(--signal);
+  transform: translate3d(var(--x, -200px), var(--y, -200px), 0) scale(0);
+  transition: transform .5s var(--spring), background-color .4s var(--ease);
+}
+.cursor__label span {
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+}
+.cursor.is-label .cursor__label {
+  transform: translate3d(var(--x, -200px), var(--y, -200px), 0) scale(1);
+}
+.cursor.is-label .cursor__blob { opacity: 0; }
+
+body.has-cursor, body.has-cursor a { cursor: none; }
+
+/* --- Notice file:// ----------------------------------------------------- */
+.notice {
+  grid-column: span 12;
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: clamp(1.75rem, 4vw, 3rem);
+  max-width: 62ch;
+}
+.notice h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  letter-spacing: -.02em;
+  margin-bottom: .75rem;
+}
+.notice p { color: var(--muted); font-size: .9375rem; }
+.notice p + p { margin-top: .75rem; }
+.notice code {
+  display: block;
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 14px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: .8125rem;
+  overflow-x: auto;
+}
+
+/* --- Footer ------------------------------------------------------------- */
+.foot {
+  margin-inline: auto;
+  padding: clamp(2rem, 5vw, 3.5rem) var(--gut) clamp(2.5rem, 6vw, 4rem);
+  max-width: var(--wrap);
+  overflow: hidden;
+}
+.foot__brand {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(3.5rem, 17vw, 13rem);
+  letter-spacing: -.05em;
+  line-height: .85;
+  color: var(--ink);
+  will-change: transform;
+}
+.foot__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
+}
+.foot__meta, .foot__fine { font-size: .8125rem; color: var(--muted); max-width: 40ch; }
+
+/* --- Reduced motion ----------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .mask__in, .js .mask__in { transform: none; }
+  .rise, .js .rise { opacity: 1; transform: none; }
+  .grid.js-reveal .cell { opacity: 1; --rev: 0px; --revs: 1; }
+  .cell { --par: 0px; }
+  .card__index { --ip: 0px; }
+  .grid { --skew: 0deg; }
+  .progress { display: none; }
+  .js .cell { height: auto; }
+  .js .card__body, .js .card__dl { opacity: 1; transform: none; }
+  .js .card__art { opacity: var(--art-alpha); }
+  .marquee__track { animation: none; }
+  .cursor { display: none !important; }
+  body.has-cursor, body.has-cursor a { cursor: auto; }
+}

@@ -1,0 +1,66 @@
+<svg
+  viewBox="318 196 618 618"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-label="DocuDuo"
+>
+  <defs>
+    <linearGradient id="ddMainGradient" gradientUnits="userSpaceOnUse" x1="310" y1="0" x2="940" y2="0">
+      <stop offset="0%" stop-color="#1479F2"/>
+      <stop offset="52%" stop-color="#128BE8"/>
+      <stop offset="100%" stop-color="#13C4C2"/>
+    </linearGradient>
+    <linearGradient id="ddLeftGradient" gradientUnits="userSpaceOnUse" x1="380" y1="430" x2="620" y2="690">
+      <stop offset="0%" stop-color="#1479F2"/>
+      <stop offset="100%" stop-color="#1372E8"/>
+    </linearGradient>
+    <linearGradient id="ddRightGradient" gradientUnits="userSpaceOnUse" x1="640" y1="430" x2="875" y2="690">
+      <stop offset="0%" stop-color="#13C8C6"/>
+      <stop offset="100%" stop-color="#10BDBC"/>
+    </linearGradient>
+    <linearGradient id="ddLeftLight" gradientUnits="userSpaceOnUse" x1="410" y1="355" x2="600" y2="470">
+      <stop offset="0%" stop-color="#63A9F5"/>
+      <stop offset="100%" stop-color="#8BC7FA"/>
+    </linearGradient>
+    <linearGradient id="ddRightLight" gradientUnits="userSpaceOnUse" x1="650" y1="470" x2="835" y2="355">
+      <stop offset="0%" stop-color="#81DBDB"/>
+      <stop offset="100%" stop-color="#5DCFD0"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="627" cy="507" r="301" stroke="url(#ddMainGradient)" stroke-width="15"/>
+
+  <path d="M414 371 C472 384 535 414 607 486 C554 443 501 423 447 415 L414 371 Z" fill="url(#ddLeftLight)"/>
+  <path d="M399 426 C476 416 551 441 609 495 C550 458 481 448 408 456 Z" fill="#62A9F5" opacity="0.95"/>
+  <path d="M646 486 C718 414 783 384 840 371 L807 415 C752 423 699 443 646 486 Z" fill="url(#ddRightLight)"/>
+  <path d="M645 495 C704 441 779 416 855 426 L846 456 C773 448 704 458 645 495 Z" fill="#77D7D7" opacity="0.95"/>
+
+  <path
+    d="M383 430 C382 423 388 420 396 421 C467 425 547 450 600 491 C609 498 614 510 614 521 L614 648 C614 672 597 691 574 693 L550 694 C543 711 531 726 514 737 C520 716 517 701 508 689 L422 674 C395 670 379 653 379 626 L379 449 C379 441 380 435 383 430 Z"
+    fill="url(#ddLeftGradient)"
+  />
+  <circle cx="562" cy="560" r="14" fill="white"/>
+  <rect x="421" y="519" width="89" height="16" rx="8" fill="white" transform="rotate(11 421 519)"/>
+  <rect x="422" y="558" width="87" height="16" rx="8" fill="white" transform="rotate(11 422 558)"/>
+
+  <path
+    d="M871 430 C875 435 876 441 876 449 L876 626 C876 653 860 670 833 674 L747 689 C738 701 735 716 741 737 C724 726 712 711 705 694 L681 693 C658 691 640 672 640 648 L640 521 C640 510 645 498 654 491 C708 450 787 425 858 421 C866 420 871 423 871 430 Z"
+    fill="url(#ddRightGradient)"
+  />
+  <circle cx="686" cy="560" r="14" fill="white"/>
+  <rect x="747" y="536" width="87" height="16" rx="8" fill="white" transform="rotate(-11 747 536)"/>
+  <rect x="748" y="576" width="86" height="16" rx="8" fill="white" transform="rotate(-11 748 576)"/>
+
+  <path
+    d="M625 337 C631 363 637 369 662 376 C637 383 631 389 625 415 C618 389 612 383 587 376 C612 369 618 363 625 337 Z"
+    fill="url(#ddMainGradient)"
+  />
+
+  <circle cx="625" cy="285" r="15" fill="#48C53F"/>
+  <line x1="625" y1="305" x2="625" y2="329" stroke="#19A6BE" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="542" cy="392" r="11" fill="#1479F2"/>
+  <line x1="556" y1="388" x2="580" y2="381" stroke="#1479F2" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="705" cy="392" r="11" fill="#13C4C2"/>
+  <line x1="692" y1="388" x2="670" y2="381" stroke="#13C4C2" stroke-width="4" stroke-linecap="round"/>
+</svg>

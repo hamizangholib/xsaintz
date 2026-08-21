@@ -1,0 +1,75 @@
+[
+  {
+    "id": "pdf-toolkit",
+    "name": "PDF Toolkit",
+    "logo": "logo/web/pdf-toolkit.png",
+    "kind": "Web app",
+    "tagline": "Gabung, pisah, dan ubah PDF tanpa upload",
+    "description": "Merge, split, atur ulang halaman, image ke PDF, markdown ke PDF, dan compress. Semua berkas diproses di dalam browser, tidak ada yang dikirim ke server mana pun.",
+    "href": "https://hamizangholib.github.io/pdf_split_merge/",
+    "action": "Buka",
+    "accent": "#C42350",
+    "meta": [
+      "6 fungsi",
+      "Offline",
+      "Tanpa upload"
+    ]
+  },
+  {
+    "id": "saveflow",
+    "name": "Saveflow",
+    "logo": "logo/web/saveflow.png",
+    "kind": "Web app",
+    "tagline": "Simpan video sosmed lewat satu link",
+    "description": "Download dari TikTok, Instagram, Facebook, X, dan Threads. Pilih resolusi sebelum download, bisa ambil audio saja, tanpa watermark dan tanpa akun.",
+    "href": "https://hamizangholib.github.io/sosmed-downloader/",
+    "action": "Buka",
+    "accent": "#0B7A5E",
+    "meta": [
+      "5 platform",
+      "Tanpa akun",
+      "Tanpa watermark"
+    ]
+  },
+  {
+    "id": "docuduo",
+    "name": "DocuDuo",
+    "logo": "logo/web/docuduo.svg",
+    "kind": "Web app",
+    "tagline": "Tanya apa saja tentang materi belajarmu",
+    "description": "Unggah materi, lalu tanya isinya. Jawabannya lengkap dengan sumber dari dokumen yang kamu berikan, jadi bisa ditelusuri balik.",
+    "href": "https://docu-duo.vercel.app/",
+    "action": "Buka",
+    "accent": "#5B3DF5",
+    "meta": [
+      "Berbasis AI",
+      "Jawaban bersumber"
+    ],
+    "note": "Perlu login Google dan akun yang sudah didaftarkan"
+  },
+  {
+    "id": "cleanmark",
+    "name": "CleanMark",
+    "logo": "logo/web/cleanmark.png",
+    "kind": "Aplikasi Windows",
+    "tagline": "Hapus watermark teks dari gambar",
+    "description": "Aplikasi desktop untuk membersihkan watermark teks. Tersedia versi portable yang langsung jalan tanpa install, dan versi installer biasa.",
+    "href": "https://github.com/hamizangholib/cleanmark/releases/latest",
+    "action": "Unduh",
+    "accent": "#A35400",
+    "meta": [
+      "Windows",
+      "Portable & installer"
+    ],
+    "downloads": [
+      {
+        "label": "Portable .exe",
+        "href": "https://github.com/hamizangholib/cleanmark/releases/latest/download/CleanMark-Portable.exe"
+      },
+      {
+        "label": "Installer",
+        "href": "https://github.com/hamizangholib/cleanmark/releases/latest/download/CleanMark-Setup.exe"
+      }
+    ]
+  }
+]

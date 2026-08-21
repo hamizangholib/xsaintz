@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>XSaintZ — Kumpulan tools buatan sendiri</title>
+<meta name="description" content="Satu pintu masuk ke tools yang saya bangun: PDF Toolkit, Saveflow, DocuDuo, dan CleanMark. Gratis, ringan, langsung pakai.">
+<meta name="theme-color" content="#EEF0F4">
+<link rel="canonical" href="https://xsaintz.my.id/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://xsaintz.my.id/">
+<meta property="og:site_name" content="XSaintZ">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="XSaintZ — Kumpulan tools buatan sendiri">
+<meta property="og:description" content="Satu pintu masuk ke tools yang saya bangun: PDF Toolkit, Saveflow, DocuDuo, dan CleanMark. Gratis, ringan, langsung pakai.">
+<meta property="og:image" content="https://xsaintz.my.id/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="XSaintZ — kumpulan tools buatan sendiri">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700..800&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip" href="#tools">Lompat ke daftar tools</a>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+<div class="wash" id="wash" aria-hidden="true"></div>
+
+<header class="masthead">
+  <a class="wordmark" href="#top" data-stick aria-label="XSaintZ, ke atas halaman">
+    <img class="wordmark__img" src="logo/web/xsaintz.png" alt="" width="32" height="32"
+         onerror="this.remove()">
+    <span class="wordmark__text"><span class="wordmark__x">X</span>SaintZ</span>
+  </a>
+  <p class="masthead__note">Tools buatan sendiri</p>
+</header>
+
+<main id="top">
+
+  <section class="hero" id="hero">
+    <p class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span> Mahasiswa gabut</p>
+
+    <h1 class="hero__title">
+      <span class="mask"><span class="mask__in" style="--d:0ms">Small tools</span></span>
+      <span class="mask"><span class="mask__in" style="--d:90ms">for the work</span></span>
+      <span class="mask"><span class="mask__in" style="--d:180ms"><em>nobody likes</em>.</span></span>
+    </h1>
+
+    <p class="hero__lede">
+      Berawal dari kebutuhan kerja sendiri, lalu ternyata berguna buat orang lain juga.
+      Semuanya gratis, tanpa akun, dan bisa langsung dipakai.
+    </p>
+
+    <a class="cue" href="#tools" data-stick>
+      <span>Lihat semua</span>
+      <span class="cue__count" id="cue-count" aria-hidden="true"></span>
+    </a>
+  </section>
+
+  <!-- Pita berjalan. Isinya dibangun dari tools.json, jadi tool baru otomatis
+       ikut muncul. Dekoratif murni — nama tool sudah dibacakan lewat kartunya. -->
+  <section class="marquee" id="marquee-box" aria-hidden="true">
+    <div class="marquee__shift" id="marquee-shift">
+      <div class="marquee__track" id="marquee"></div>
+    </div>
+  </section>
+
+  <section class="tools" id="tools" aria-labelledby="tools-heading">
+    <div class="tools__head">
+      <h2 id="tools-heading" class="section-title">Daftar tools</h2>
+      <p class="section-note">Klik mana saja untuk membuka di tab yang sama.</p>
+    </div>
+
+    <ol class="grid" id="grid" aria-busy="true">
+      <li class="loading" id="loading">Memuat daftar tools…</li>
+    </ol>
+  </section>
+
+  <footer class="foot">
+    <p class="foot__brand" id="foot-brand">XSaintZ</p>
+    <div class="foot__row">
+      <p class="foot__meta">xsaintz.my.id · dibangun dan dirawat sendiri</p>
+      <p class="foot__fine">Punya masukan atau ketemu bug? Kabari saya, tools-nya masih terus diperbaiki.</p>
+    </div>
+  </footer>
+
+</main>
+
+<div class="cursor" id="cursor" aria-hidden="true">
+  <div class="cursor__blob" id="cursor-blob"></div>
+  <div class="cursor__label" id="cursor-label"><span></span></div>
+</div>
+
+<script src="https://unpkg.com/lenis@1.3.11/dist/lenis.min.js" defer></script>
+<script src="main.js" defer></script>
+</body>
+</html>

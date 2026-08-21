@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="wash" cx="78%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#3D2BFF" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#3D2BFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#EEF0F4"/>
+  <rect width="1200" height="630" fill="url(#wash)"/>
+
+  <!-- masthead -->
+  <text x="80" y="98" font-size="26" font-weight="700" fill="#161A2B" letter-spacing="-0.5">
+    <tspan fill="#3D2BFF">X</tspan>SaintZ
+  </text>
+  <text x="1120" y="98" font-size="19" fill="#5C6379" text-anchor="end">Tools buatan sendiri</text>
+  <line x1="80" y1="128" x2="1120" y2="128" stroke="#D2D6DF" stroke-width="1"/>
+
+  <!-- display -->
+  <text x="80" y="290" font-size="96" font-weight="800" fill="#161A2B" letter-spacing="-4">Small tools</text>
+  <text x="80" y="386" font-size="96" font-weight="800" fill="#161A2B" letter-spacing="-4">for the work</text>
+  <text x="80" y="482" font-size="96" font-weight="800" fill="#161A2B" letter-spacing="-4"><tspan fill="#3D2BFF">nobody likes</tspan>.</text>
+
+  <!-- ledger tools -->
+  <line x1="80" y1="540" x2="1120" y2="540" stroke="#D2D6DF" stroke-width="1"/>
+  <g font-size="21" font-weight="600" fill="#161A2B">
+    <circle cx="86" cy="581" r="6" fill="#C42350"/><text x="104" y="588">PDF Toolkit</text>
+    <circle cx="332" cy="581" r="6" fill="#0B7A5E"/><text x="350" y="588">Saveflow</text>
+    <circle cx="546" cy="581" r="6" fill="#5B3DF5"/><text x="564" y="588">DocuDuo</text>
+    <circle cx="762" cy="581" r="6" fill="#A35400"/><text x="780" y="588">CleanMark</text>
+  </g>
+  <text x="1120" y="588" font-size="21" fill="#5C6379" text-anchor="end">xsaintz.my.id</text>
+</svg>
