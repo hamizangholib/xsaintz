@@ -1,0 +1,8 @@
+# Berkas kerja, tidak perlu ikut ke repo publik
+prompt-claude-code-linkhub.md
+
+# Logo sumber (1,14 MB). Halaman hanya memuat logo/web/ yang sudah diperkecil.
+# Simpan cadangannya sendiri di luar repo.
+logo/*.png
+logo/*.svg
+!logo/web/
