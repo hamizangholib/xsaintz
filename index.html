@@ -41,21 +41,21 @@
          onerror="this.remove()">
     <span class="wordmark__text"><span class="wordmark__x">X</span>SaintZ</span>
   </a>
-  <p class="masthead__note">Tools buatan sendiri</p>
+  <p class="masthead__note" data-magnet>Tools buatan sendiri</p>
 </header>
 
 <main id="top">
 
   <section class="hero" id="hero">
-    <p class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span> Mahasiswa gabut</p>
+    <p class="eyebrow" data-magnet data-pause><span class="eyebrow__dot" aria-hidden="true"></span> Mahasiswa gabut</p>
 
     <h1 class="hero__title">
-      <span class="mask"><span class="mask__in" style="--d:0ms">Small tools</span></span>
-      <span class="mask"><span class="mask__in" style="--d:90ms">for the work</span></span>
-      <span class="mask"><span class="mask__in" style="--d:180ms"><em>nobody likes</em>.</span></span>
+      <span class="mask"><span class="mask__in" data-magnet style="--d:0ms">Small tools</span></span>
+      <span class="mask"><span class="mask__in" data-magnet style="--d:90ms">for the work</span></span>
+      <span class="mask"><span class="mask__in" data-magnet style="--d:180ms"><em>nobody likes</em>.</span></span>
     </h1>
 
-    <p class="hero__lede">
+    <p class="hero__lede" data-magnet>
       Berawal dari kebutuhan kerja sendiri, lalu ternyata berguna buat orang lain juga.
       Semuanya gratis, tanpa akun, dan bisa langsung dipakai.
     </p>
@@ -68,7 +68,7 @@
 
   <!-- Pita berjalan. Isinya dibangun dari tools.json, jadi tool baru otomatis
        ikut muncul. Dekoratif murni — nama tool sudah dibacakan lewat kartunya. -->
-  <section class="marquee" id="marquee-box" aria-hidden="true">
+  <section class="marquee" id="marquee-box" data-pause aria-hidden="true">
     <div class="marquee__shift" id="marquee-shift">
       <div class="marquee__track" id="marquee"></div>
     </div>
@@ -76,8 +76,8 @@
 
   <section class="tools" id="tools" aria-labelledby="tools-heading">
     <div class="tools__head">
-      <h2 id="tools-heading" class="section-title">Daftar tools</h2>
-      <p class="section-note">Klik mana saja untuk membuka di tab yang sama.</p>
+      <h2 id="tools-heading" class="section-title" data-magnet>Daftar tools</h2>
+      <p class="section-note" data-magnet>Klik mana saja untuk membuka di tab yang sama.</p>
     </div>
 
     <ol class="grid" id="grid" aria-busy="true">
@@ -86,21 +86,32 @@
   </section>
 
   <footer class="foot">
-    <p class="foot__brand" id="foot-brand">XSaintZ</p>
+    <p class="foot__brand" id="foot-brand" data-magnet>XSaintZ</p>
     <div class="foot__row">
-      <p class="foot__meta">xsaintz.my.id · dibangun dan dirawat sendiri</p>
-      <p class="foot__fine">Punya masukan atau ketemu bug? Kabari saya, tools-nya masih terus diperbaiki.</p>
+      <p class="foot__meta" data-magnet>xsaintz.my.id · dibangun dan dirawat sendiri</p>
+      <p class="foot__fine" data-magnet>Punya masukan atau ketemu bug? Kabari saya, tools-nya masih terus diperbaiki.</p>
     </div>
   </footer>
 
 </main>
 
 <div class="cursor" id="cursor" aria-hidden="true">
-  <div class="cursor__blob" id="cursor-blob"></div>
   <div class="cursor__label" id="cursor-label"><span></span></div>
 </div>
 
-<script src="https://unpkg.com/lenis@1.3.11/dist/lenis.min.js" defer></script>
+<!-- Blob sengaja tinggal DI LUAR .cursor. Elemen yang membuat stacking context
+     mengisolasi blending anak-anaknya, dan .cursor membuatnya lewat z-index.
+     Di dalam sana mix-blend-mode: difference tidak punya backdrop apa pun untuk
+     dibalik, jadi blob cuma tampil putih polos. Sebagai saudara di level body,
+     backdrop-nya adalah halaman: blob jadi hitam di atas kertas terang, dan
+     huruf di bawahnya jadi putih. -->
+<div class="cursor__blob" id="cursor-blob" aria-hidden="true"></div>
+
+<!-- Lenis disimpan sendiri, bukan dari CDN: satu berkas lagi lewat koneksi
+     yang sudah terbuka ke domain ini, tanpa DNS dan TLS ke origin ketiga.
+     Versi 1.3.11 — kalau mau naik versi, unduh ulang berkasnya:
+     curl -o lenis.min.js https://unpkg.com/lenis@<versi>/dist/lenis.min.js -->
+<script src="lenis.min.js" defer></script>
 <script src="main.js" defer></script>
 </body>
 </html>

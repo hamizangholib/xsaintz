@@ -142,6 +142,7 @@
 
     setupReveal();
     setupOpen();
+    setupIdleAnimations();
     setupInteraction();
     if (fine && !reduced) setupCursor();
     if (setupScroll.remeasure) requestAnimationFrame(setupScroll.remeasure);
@@ -215,6 +216,10 @@
 
     // Terbuka setelah kartu masuk cukup dalam, bukan begitu ujungnya menyentuh
     // layar — supaya gerak membukanya benar-benar terlihat.
+    // Terbuka sekali, lalu berhenti diamati. Menutupnya kembali saat kartu
+    // keluar layar sempat dicoba, tapi transisi height memicu layout ulang
+    // seluruh dokumen tiap frame selama 0.9 detik — dua kali lebih sering
+    // kalau kartu boleh menutup lagi. Sekali buka, biayanya dibayar sekali.
     var fired = false;
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
@@ -406,6 +411,34 @@
     var cx = -200, cy = -200;   // posisi blob (tertinggal)
     var stick = null;           // elemen yang sedang ditempeli
 
+    // Teks bertanda data-magnet menarik blob saat pointer mendekat. Blob tetap
+    // bulat dan membesar, lalu mix-blend-mode difference membalik warna teks
+    // di bawahnya. Daftarnya statis (tidak ada di dalam kartu), jadi cukup
+    // sekali query; rect-nya dibaca di dalam rAF, satu kali per frame.
+    var MAGNET_R = 120;
+    var magnets = document.querySelectorAll("[data-magnet]");
+    var near = false;
+
+    // Rect-nya di-cache. Membacanya tiap frame berarti sebelas pengukuran
+    // paksa tiap kali pointer bergerak, padahal posisi teks hanya berubah
+    // kalau halaman scroll, ukurannya berubah, atau kartu selesai membuka.
+    var mrects = [], mDirty = true;
+
+    function measureMagnets() {
+      var vh = window.innerHeight;
+      mrects.length = 0;
+      for (var i = 0; i < magnets.length; i++) {
+        var r = magnets[i].getBoundingClientRect();
+        if (r.width && r.bottom > -MAGNET_R && r.top < vh + MAGNET_R) mrects.push(r);
+      }
+      mDirty = false;
+    }
+
+    function magnetsDirty() { mDirty = true; }
+    window.addEventListener("scroll", magnetsDirty, { passive: true });
+    window.addEventListener("resize", magnetsDirty, { passive: true });
+    grid.addEventListener("transitionend", magnetsDirty);
+
     document.addEventListener("mousemove", function (e) {
       tx = e.clientX; ty = e.clientY;
       labelBox.style.setProperty("--x", tx + "px");
@@ -429,6 +462,33 @@
         gy = r.top + r.height / 2 + (ty - (r.top + r.height / 2)) * 0.22;
       }
 
+      // Tarikan magnet: makin dekat teks, makin kuat blob ditarik ke titik
+      // terdekat pada teks itu. Di dalam kotak teksnya jaraknya nol, jadi blob
+      // mengikuti pointer persis — yang terlihat cuma teks yang terbalik.
+      var pull = 0;
+      if (!stick) {
+        if (mDirty) measureMagnets();
+        var nd = 1e9, nx = 0, ny = 0;
+        for (var i = 0; i < mrects.length; i++) {
+          var mr = mrects[i];
+          var qx = tx < mr.left ? mr.left : (tx > mr.right ? mr.right : tx);
+          var qy = ty < mr.top ? mr.top : (ty > mr.bottom ? mr.bottom : ty);
+          var ex = tx - qx, ey = ty - qy;
+          var d = Math.sqrt(ex * ex + ey * ey);
+          if (d < nd) { nd = d; nx = qx; ny = qy; }
+        }
+        if (nd < MAGNET_R) {
+          pull = (1 - nd / MAGNET_R) * 0.55;
+          gx = tx + (nx - tx) * pull;
+          gy = ty + (ny - ty) * pull;
+        }
+      }
+
+      if ((pull > 0) !== near) {
+        near = pull > 0;
+        cursor.classList.toggle("is-near", near);
+      }
+
       var px = cx, py = cy;
       cx += (gx - cx) * (stick ? 0.22 : 0.17);
       cy += (gy - cy) * (stick ? 0.22 : 0.17);
@@ -436,7 +496,7 @@
       // Melar searah gerak: makin cepat, makin lonjong.
       var dx = cx - px, dy = cy - py;
       var speed = Math.min(Math.sqrt(dx * dx + dy * dy), 42);
-      var stretch = stick ? 0 : speed / 42;
+      var stretch = stick ? 0 : speed / 42 * (1 - pull);
 
       blob.style.setProperty("--x", cx.toFixed(2) + "px");
       blob.style.setProperty("--y", cy.toFixed(2) + "px");
@@ -493,6 +553,21 @@
     });
   }
 
+  /* --- jeda animasi yang keluar layar ------------------------------------ */
+  /* Pita dan titik eyebrow berputar tanpa henti. Selama pengunjung membaca
+     kartu di bawah, keduanya masih memutar compositor tanpa ada yang melihat. */
+  function setupIdleAnimations() {
+    if (reduced || !("IntersectionObserver" in window)) return;
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        e.target.classList.toggle("is-paused", !e.isIntersecting);
+      });
+    }, { rootMargin: "10% 0px" });
+
+    document.querySelectorAll("[data-pause]").forEach(function (n) { io.observe(n); });
+  }
+
   /* --- smooth scroll + parallax ----------------------------------------- */
   /* Semua efek scroll dijalankan satu rAF, dan hanya menyentuh transform.
      Posisi elemen dihitung sekali lalu disimpan; memanggil
@@ -501,7 +576,12 @@
     var lenis = null;
 
     if (!reduced && typeof window.Lenis === "function") {
-      lenis = new window.Lenis({ autoRaf: true, lerp: 0.1, wheelMultiplier: 1, touchMultiplier: 1.6 });
+      // autoRaf sengaja dimatikan. Dengan autoRaf, Lenis memutar rAF-nya
+      // sendiri selamanya — 60 panggilan per detik walau halaman diam berjam
+      // -jam dan tidak ada satu piksel pun yang berubah. Di bawah, Lenis
+      // dimajukan dari loop yang sama dengan efek scroll, dan loop itu mati
+      // begitu semuanya diam.
+      lenis = new window.Lenis({ autoRaf: false, lerp: 0.1, wheelMultiplier: 1, touchMultiplier: 1.6 });
     }
 
     // Anchor harus lewat Lenis, kalau tidak halaman melompat keras.
@@ -511,7 +591,7 @@
       var target = document.querySelector(a.getAttribute("href"));
       if (!target) return;
       e.preventDefault();
-      if (lenis) lenis.scrollTo(target, { offset: -20 });
+      if (lenis) { lenis.scrollTo(target, { offset: -20 }); wake(); }
       else target.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
     });
 
@@ -555,9 +635,9 @@
     function clamp(v, lim) { return v < -lim ? -lim : (v > lim ? lim : v); }
 
     var raf = 0;
+    var wakeUntil = 0;
 
     function frame() {
-      raf = 0;
       var y = window.scrollY || 0;
       var mid = y + vh / 2;
 
@@ -599,13 +679,49 @@
         brand.style.transform = "translate3d(" + (p * -7).toFixed(2) + "%,0,0)";
       }
 
-      // Terus berjalan selama masih ada sisa gerak yang harus diluruhkan.
-      if (vel !== 0 || Math.abs(mx) > 0.5) onScroll();
+      // Masih ada sisa gerak yang harus diluruhkan?
+      return vel !== 0 || Math.abs(mx) > 0.5;
+    }
+
+    /* Satu rAF untuk segalanya: Lenis dimajukan lebih dulu, lalu efek scroll
+       dihitung di frame yang sama. Dulu keduanya berjalan di loop terpisah,
+       jadi parallax selalu memakai posisi scroll milik frame sebelumnya. */
+    function tick(t) {
+      raf = 0;
+      if (lenis) lenis.raf(t);
+
+      var moving = frame();
+      var busy = t < wakeUntil ||
+                 (lenis && (lenis.isScrolling ||
+                            (lenis.animate && lenis.animate.isRunning)));
+
+      // Dijadwalkan langsung, bukan lewat onScroll(): onScroll me-reset jam
+      // Lenis, dan itu cuma boleh terjadi saat loop bangun dari diam.
+      if (moving || busy) raf = requestAnimationFrame(tick);
     }
 
     function onScroll() {
-      if (!raf) raf = requestAnimationFrame(frame);
+      if (raf) return;
+      // Lenis menghitung delta dari `time` frame sebelumnya. Setelah loop
+      // tidur beberapa detik, delta pertamanya jadi ribuan milidetik dan
+      // animasinya langsung lompat ke tujuan — luncuran pertama sesudah diam
+      // hilang. time = 0 membuat delta frame pertama nol.
+      if (lenis) lenis.time = 0;
+      raf = requestAnimationFrame(tick);
     }
+
+    // Wheel dan sentuhan belum menghasilkan event scroll apa pun sampai Lenis
+    // sempat memajukan animasinya, jadi loop harus dibangunkan dari input
+    // mentahnya. Jendela 400ms menjaga loop tetap hidup sampai Lenis benar-
+    // benar mulai melaporkan dirinya sedang scroll.
+    function wake() {
+      wakeUntil = (window.performance ? performance.now() : Date.now()) + 400;
+      onScroll();
+    }
+
+    ["wheel", "touchstart", "touchmove", "keydown", "pointerdown"].forEach(function (ev) {
+      window.addEventListener(ev, wake, { passive: true });
+    });
 
     var resizeTimer;
     window.addEventListener("resize", function () {
@@ -613,16 +729,16 @@
       resizeTimer = setTimeout(function () {
         measureHeights();   // tinggi kartu ikut berubah saat lebar berubah
         measure();
-        frame();
+        onScroll();
       }, 150);
     }, { passive: true });
 
     window.addEventListener("scroll", onScroll, { passive: true });
 
     // Dipanggil ulang oleh render() setelah kartu ada di DOM.
-    setupScroll.remeasure = function () { measure(); frame(); };
+    setupScroll.remeasure = function () { measure(); onScroll(); };
     measure();
-    frame();
+    onScroll();
   }
 
   /* --- notice khusus file:// -------------------------------------------- */

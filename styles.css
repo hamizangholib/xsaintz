@@ -34,9 +34,37 @@
   --accent: var(--volt);
 }
 
-@property --wc { syntax: "<color>"; inherits: true; initial-value: #3D2BFF; }
-@property --wx { syntax: "<percentage>"; inherits: true; initial-value: 72%; }
-@property --wy { syntax: "<percentage>"; inherits: true; initial-value: 34%; }
+/* Semua properti yang ditulis ulang tiap frame didaftarkan dengan
+   inherits: false. Ini bukan kosmetik: custom property yang mewaris membuat
+   satu penulisan di .grid membatalkan style SELURUH isi grid — tiap kartu,
+   tiap paragraf, tiap chip — enam puluh kali sedetik selama scroll. Dengan
+   inherits: false pembatalannya berhenti di elemen itu sendiri.
+
+   initial-value-nya sengaja disamakan dengan nilai fallback di var(...) yang
+   lama, jadi tampilannya persis sama. Yang TIDAK didaftarkan: --ink/--px/--py
+   dan --accent, karena dibaca .cell::before — pseudo-element mewaris dari
+   elemen induknya, dan inherits: false akan memutusnya. */
+@property --wc { syntax: "<color>"; inherits: false; initial-value: #3D2BFF; }
+@property --wx { syntax: "<percentage>"; inherits: false; initial-value: 72%; }
+@property --wy { syntax: "<percentage>"; inherits: false; initial-value: 34%; }
+
+@property --skew { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --par  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lift { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --rev  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --revs { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --hy   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --ip   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --mx   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --p    { syntax: "<number>"; inherits: false; initial-value: 0; }
+
+@property --x   { syntax: "<length>"; inherits: false; initial-value: -200px; }
+@property --y   { syntax: "<length>"; inherits: false; initial-value: -200px; }
+@property --sx  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --sy  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --rot { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --sw  { syntax: "<length>"; inherits: false; initial-value: 46px; }
+@property --sh  { syntax: "<length>"; inherits: false; initial-value: 46px; }
 
 /* --- Reset -------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -99,8 +127,12 @@ a { color: inherit; text-decoration: none; }
     radial-gradient(42vmax 42vmax at var(--wx) var(--wy), var(--wc) 0%, transparent 72%),
     radial-gradient(30vmax 30vmax at calc(100% - var(--wx)) calc(var(--wy) + 26%), var(--wc) 0%, transparent 76%);
   opacity: .17;
-  transition: --wc .6s var(--ease), --wx .9s var(--ease),
-              --wy .9s var(--ease), opacity .6s var(--ease);
+  /* Hanya opacity yang ditransisikan. Menganimasikan --wc/--wx/--wy berarti
+     mengecat ulang gradien selebar 160% viewport tiap frame selama hampir
+     satu detik, tiap kali pointer masuk atau keluar kartu — itu biaya cat
+     terbesar di halaman ini. Warna dan posisinya kini berganti seketika,
+     tersamarkan oleh fade opacity-nya. */
+  transition: opacity .6s var(--ease);
 }
 .wash.is-lit { opacity: .34; }
 
@@ -283,6 +315,10 @@ main, .masthead { position: relative; z-index: 1; }
   background: var(--volt);
 }
 
+/* Animasi CSS tetap memakai compositor walau elemennya jauh di luar layar.
+   main.js memasang .is-paused lewat IntersectionObserver. */
+.is-paused, .is-paused * { animation-play-state: paused !important; }
+
 /* --- Seksi tools -------------------------------------------------------- */
 .tools {
   padding: 0 var(--gut) clamp(3.5rem, 9vw, 7rem);
@@ -320,6 +356,8 @@ main, .masthead { position: relative; z-index: 1; }
   /* Miring sedikit mengikuti kecepatan scroll, diisi main.js. Transform saja,
      dan sudutnya dibatasi kecil supaya teks tetap enak dibaca. */
   transform: skewY(var(--skew, 0deg));
+  will-change: transform;   /* punya lapisan sendiri: skew jadi kerja GPU,
+                               bukan raster ulang seluruh isi grid tiap frame */
 }
 
 /* --- Panel ------------------------------------------------------------- */
@@ -345,6 +383,8 @@ main, .masthead { position: relative; z-index: 1; }
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  contain: layout paint;   /* isi kartu tidak ikut membatalkan layout/cat
+                              halaman saat tingginya beranimasi */
   border-radius: var(--radius);
   background: var(--surface);
   padding: clamp(1.6rem, 3vw, 3rem);
@@ -715,14 +755,21 @@ main, .masthead { position: relative; z-index: 1; }
 .cursor { position: fixed; inset: 0; z-index: 200; pointer-events: none; display: none; }
 .cursor.is-on { display: block; }
 
+/* Saudara .cursor, bukan anaknya — lihat komentar di index.html. Karena itu
+   semua keadaannya dipilih lewat selektor saudara umum (~), sementara kelasnya
+   tetap dipasang main.js di #cursor. */
 .cursor__blob {
-  position: absolute;
+  position: fixed;
   top: 0; left: 0;
+  z-index: 200;
+  display: none;
+  pointer-events: none;
   width: 46px; height: 46px;
   margin: -23px 0 0 -23px;
   border-radius: 999px;
   background: #fff;
   mix-blend-mode: difference;
+  will-change: transform;
   transform: translate3d(var(--x, -200px), var(--y, -200px), 0)
              rotate(var(--rot, 0deg)) scale(var(--sx, 1), var(--sy, 1));
   transition: width .45s var(--spring), height .45s var(--spring),
@@ -730,8 +777,17 @@ main, .masthead { position: relative; z-index: 1; }
               opacity .3s var(--ease);
 }
 
+/* Dekat teks: blob membesar tapi tetap bulat, jadi teks di bawahnya terbalik
+   penuh oleh mix-blend-mode difference. */
+.cursor.is-on ~ .cursor__blob { display: block; }
+
+.cursor.is-near ~ .cursor__blob {
+  width: 78px; height: 78px;
+  margin: -39px 0 0 -39px;
+}
+
 /* Sticky: blob mengunci ke kotak elemen kecil (tombol, wordmark). */
-.cursor.is-stuck .cursor__blob {
+.cursor.is-stuck ~ .cursor__blob {
   width: var(--sw, 46px);
   height: var(--sh, 46px);
   margin: calc(var(--sh, 46px) / -2) 0 0 calc(var(--sw, 46px) / -2);
@@ -762,7 +818,7 @@ main, .masthead { position: relative; z-index: 1; }
 .cursor.is-label .cursor__label {
   transform: translate3d(var(--x, -200px), var(--y, -200px), 0) scale(1);
 }
-.cursor.is-label .cursor__blob { opacity: 0; }
+.cursor.is-label ~ .cursor__blob { opacity: 0; }
 
 body.has-cursor, body.has-cursor a { cursor: none; }
 
@@ -838,6 +894,6 @@ body.has-cursor, body.has-cursor a { cursor: none; }
   .js .card__body, .js .card__dl { opacity: 1; transform: none; }
   .js .card__art { opacity: var(--art-alpha); }
   .marquee__track { animation: none; }
-  .cursor { display: none !important; }
+  .cursor, .cursor__blob { display: none !important; }
   body.has-cursor, body.has-cursor a { cursor: auto; }
 }
